@@ -8,6 +8,8 @@
   <meta name="description" content="PixeroDesk is your personal workspace for tasks, notes, projects and bookmarks.">
   <title>PixeroDesk — Your space. Your workflow.</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
     :root {
       color-scheme: light;
@@ -62,6 +64,116 @@
     button:disabled { opacity: .55; cursor: not-allowed; }
 
     .app { min-height: 100vh; }
+    /* Authentication screen */
+body:not(.authenticated) .app {
+  display: none;
+}
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+body.authenticated .auth-screen {
+  display: none;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 410px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 28px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+}
+
+.auth-brand-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  font-size: 21px;
+}
+
+.auth-card h1 {
+  margin-bottom: 8px;
+  font-size: 25px;
+  letter-spacing: -.7px;
+}
+
+.auth-description {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 15px;
+}
+
+.auth-form .primary-button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 4px;
+}
+
+.auth-message {
+  margin-top: 15px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.auth-switch {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.auth-switch button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.auth-switch button:hover {
+  text-decoration: underline;
+}
+
+.auth-error {
+  color: var(--red);
+}
+
+.auth-success {
+  color: var(--green);
+}
+
+.auth-logout {
+  width: 100%;
+  margin-top: 8px;
+}
 
     .sidebar {
       position: fixed;
@@ -522,7 +634,82 @@
 </head>
 
 <body>
-  <div class="app">
+
+```
+<!-- Login and registration -->
+<section class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <div class="auth-brand-icon">P</div>
+      <span>PixeroDesk</span>
+    </div>
+
+    <h1 id="auth-title">Welcome back</h1>
+
+    <p class="auth-description" id="auth-description">
+      Sign in to access your personal workspace.
+    </p>
+
+    <form class="auth-form" id="auth-form">
+
+      <div class="field">
+        <label for="auth-email">Email address</label>
+        <input
+          class="text-input"
+          id="auth-email"
+          type="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          maxlength="254"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="auth-password">Password</label>
+        <input
+          class="text-input"
+          id="auth-password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="At least 8 characters"
+          minlength="8"
+          maxlength="128"
+          required
+        >
+      </div>
+
+      <button
+        class="primary-button"
+        id="auth-submit"
+        type="submit"
+      >
+        Sign In
+      </button>
+
+    </form>
+
+    <div
+      class="auth-message"
+      id="auth-message"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+    <div class="auth-switch">
+      <span id="auth-switch-text">Don't have an account?</span>
+      <button id="auth-switch-button" type="button">
+        Create account
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<div class="app">
+```
+
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-icon">P</div>
@@ -552,16 +739,27 @@
         </button>
       </nav>
 
-      <div class="sidebar-bottom">
-        <div class="profile">
-          <div class="avatar">P</div>
-          <div>
-            <div class="profile-name" id="profile-name">Local Workspace</div>
-            <div class="profile-sub">Personal workspace</div>
-          </div>
-        </div>
+     ```
+  <div class="sidebar-bottom">
+    <div class="profile">
+      <div class="avatar">P</div>
+      <div>
+        <div class="profile-name" id="profile-name">Local Workspace</div>
+        <div class="profile-sub">Personal workspace</div>
       </div>
-    </aside>
+    </div>
+
+    <button
+      class="secondary-button auth-logout"
+      id="logout-button"
+      type="button"
+    >
+      Sign Out
+    </button>
+  </div>
+</aside>
+```
+
 
     <main>
       <header class="topbar">
@@ -784,6 +982,16 @@
   <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
   <script>
+        const SUPABASE_URL = "https://dgolehljczpgapphuhap.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mYtbqnA7imrLcDAQLedzrQ_9Km-ZEE8";
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    console.log("PixeroDesk: Supabase client initialized.");
+
     (() => {
       "use strict";
 
@@ -811,6 +1019,13 @@
       let data = loadData();
       let toastTimer = null;
 
+  let currentUser = null;
+  let cloudReady = false;
+  let cloudSaveTimer = null;
+  let authMode = "login";
+  let authInitialized = false;
+  const OWNER_KEY = "pixeroDeskOwnerV1";
+
       function loadData() {
         try {
           const saved = localStorage.getItem(STORAGE_KEY);
@@ -829,17 +1044,208 @@
         }
       }
 
-      function saveData() {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          return true;
-        } catch (error) {
-          showToast("Unable to save. Your browser storage may be full or disabled.");
-          return false;
-        }
+  
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+      if (currentUser && cloudReady) {
+        scheduleCloudSave();
       }
 
-      function makeId() {
+      return true;
+    } catch (error) {
+      showToast("Unable to save. Your browser storage may be full or disabled.");
+      return false;
+    }
+  }
+
+  function scheduleCloudSave() {
+    clearTimeout(cloudSaveTimer);
+
+    cloudSaveTimer = setTimeout(async () => {
+      if (!currentUser || !cloudReady) return;
+
+      const userId = currentUser.id;
+
+      const { error } = await supabaseClient
+        .from("user_data")
+        .upsert(
+          {
+            user_id: userId,
+            data: data,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: "user_id" }
+        );
+
+      if (error) {
+        console.error("Cloud save failed:", error);
+        showToast("Cloud save failed. Please check your connection.");
+      }
+    }, 700);
+  }
+
+  function showAuthMessage(message, type = "") {
+    const element = document.getElementById("auth-message");
+    element.textContent = message;
+    element.className = "auth-message";
+
+    if (type) {
+      element.classList.add("auth-" + type);
+    }
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+
+    const registering = mode === "register";
+
+    document.getElementById("auth-title").textContent =
+      registering ? "Create your account" : "Welcome back";
+
+    document.getElementById("auth-description").textContent =
+      registering
+        ? "Create an account to save your workspace in the cloud."
+        : "Sign in to access your personal workspace.";
+
+    document.getElementById("auth-submit").textContent =
+      registering ? "Create Account" : "Sign In";
+
+    document.getElementById("auth-switch-text").textContent =
+      registering ? "Already have an account?" : "Don't have an account?";
+
+    document.getElementById("auth-switch-button").textContent =
+      registering ? "Sign in" : "Create account";
+
+    document.getElementById("auth-password").autocomplete =
+      registering ? "new-password" : "current-password";
+
+    showAuthMessage("");
+  }
+
+  document.getElementById("auth-switch-button").addEventListener("click", () => {
+    setAuthMode(authMode === "login" ? "register" : "login");
+  });
+
+  document.getElementById("auth-form").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const button = document.getElementById("auth-submit");
+
+    button.disabled = true;
+    showAuthMessage(
+      authMode === "register" ? "Creating your account..." : "Signing in..."
+    );
+
+    try {
+      if (authMode === "register") {
+        const { data: result, error } = await supabaseClient.auth.signUp({
+          email,
+          password
+        });
+
+        if (error) throw error;
+
+        if (!result.session) {
+          showAuthMessage(
+            "Account created! Check your email for a confirmation link before signing in.",
+            "success"
+          );
+        } else {
+          showAuthMessage("Account created successfully.", "success");
+        }
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      showAuthMessage(error.message || "Something went wrong.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  async function initializeApp(session) {
+    if (!session) {
+      currentUser = null;
+      cloudReady = false;
+      document.body.classList.remove("authenticated");
+      return;
+    }
+
+    currentUser = session.user;
+    cloudReady = false;
+    showAuthMessage("Loading your workspace...");
+
+    try {
+      const { data: row, error } = await supabaseClient
+        .from("user_data")
+        .select("data")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const owner = localStorage.getItem(OWNER_KEY);
+
+      if (row) {
+        const saved = row.data || {};
+
+        data = {
+          tasks: Array.isArray(saved.tasks) ? saved.tasks : [],
+          projects: Array.isArray(saved.projects) ? saved.projects : [],
+          bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
+          quickNote: typeof saved.quickNote === "string" ? saved.quickNote : "",
+          fullNote: typeof saved.fullNote === "string" ? saved.fullNote : "",
+          workspaceName: typeof saved.workspaceName === "string"
+            ? saved.workspaceName
+            : "Local Workspace"
+        };
+      } else {
+        if (owner && owner !== currentUser.id) {
+          data = structuredClone(defaultData);
+        }
+
+        const { error: saveError } = await supabaseClient
+          .from("user_data")
+          .upsert({
+            user_id: currentUser.id,
+            data,
+            updated_at: new Date().toISOString()
+          });
+
+        if (saveError) throw saveError;
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(OWNER_KEY, currentUser.id);
+
+      document.getElementById("dashboard-note").value = data.quickNote;
+      document.getElementById("full-note").value = data.fullNote;
+      document.getElementById("workspace-name-input").value = data.workspaceName;
+      document.getElementById("profile-name").textContent =
+        currentUser.email || data.workspaceName;
+
+      cloudReady = true;
+      document.body.classList.add("authenticated");
+      renderAll();
+    } catch (error) {
+      console.error("Workspace loading failed:", error);
+      showAuthMessage(
+        "Could not load your workspace. Please check your connection and try again.",
+        "error"
+      );
+    }
+  }
+
+function makeId() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
       }
 
@@ -1241,9 +1647,44 @@
         setTheme(false);
       }
 
-      renderAll();
+      
+  document.getElementById("logout-button").addEventListener("click", async () => {
+    const button = document.getElementById("logout-button");
+    button.disabled = true;
+
+    try {
+      const { error } = await supabaseClient.auth.signOut();
+
+      if (error) throw error;
+
+      currentUser = null;
+      cloudReady = false;
+      data = structuredClone(defaultData);
+
+      document.body.classList.remove("authenticated");
+      document.getElementById("auth-form").reset();
+      setAuthMode("login");
+    } catch (error) {
+      showToast("Could not sign out. Please try again.");
+      console.error("Sign out failed:", error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (
+      event === "INITIAL_SESSION" ||
+      event === "SIGNED_IN" ||
+      event === "SIGNED_OUT"
+    ) {
+      setTimeout(() => {
+        initializeApp(session);
+      }, 0);
+    }
+  });
+
     })();
   </script>
 </body>
 </html>
-```
