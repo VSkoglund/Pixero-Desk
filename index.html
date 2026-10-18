@@ -1235,17 +1235,26 @@
 
       document.getElementById("profile-name").textContent = data.workspaceName;
 
-      try {
-        setTheme(localStorage.getItem(THEME_KEY) === "dark");
-      } catch (error) {
-        setTheme(false);
-      }
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-      renderAll();
-    })();
+  <script>
+    window.PIXERODESK_SUPABASE_URL =
+      "https://dgolehljczpgapphuhap.supabase.co";
+
+    window.PIXERODESK_SUPABASE_KEY =
+      "sb_publishable_mYtbqnA7imrLcDAQLedzrQ_9Km-ZEE8";
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    try {
+      setTheme(localStorage.getItem(THEME_KEY) === "dark");
+    } catch (error) {
+      setTheme(false);
+    }
+
+    renderAll();
+  })();
+</script>
+
 </body>
 </html>
-```
