@@ -729,26 +729,36 @@ body.authenticated .auth-screen {
 
       <div class="section-label">WORKSPACE</div>
 
-      <nav class="nav" aria-label="Main navigation">
-        <button class="nav-button active" data-page="dashboard">
-          <span class="nav-icon">⌂</span> Dashboard
-        </button>
-        <button class="nav-button" data-page="tasks">
-          <span class="nav-icon">✓</span> My Tasks
-        </button>
-        <button class="nav-button" data-page="notes">
-          <span class="nav-icon">▤</span> Notes
-        </button>
-        <button class="nav-button" data-page="projects">
-          <span class="nav-icon">▦</span> Projects
-        </button>
-        <button class="nav-button" data-page="bookmarks">
-          <span class="nav-icon">☆</span> Bookmarks
-        </button>
-        <button class="nav-button" data-page="settings">
-          <span class="nav-icon">⚙</span> Settings
-        </button>
-      </nav>
+<nav class="nav" aria-label="Main navigation">
+  <button class="nav-button active" data-page="dashboard">
+    <span class="nav-icon">⌂</span> Dashboard
+  </button>
+
+  <button class="nav-button" data-page="tasks">
+    <span class="nav-icon">✓</span> My Tasks
+  </button>
+
+  <button class="nav-button" data-page="notes">
+    <span class="nav-icon">▤</span> Notes
+  </button>
+
+  <button class="nav-button" data-page="projects">
+    <span class="nav-icon">▦</span> Projects
+  </button>
+
+  <button class="nav-button" data-page="calendar">
+    <span class="nav-icon">📅</span> Calendar
+  </button>
+
+  <button class="nav-button" data-page="bookmarks">
+    <span class="nav-icon">☆</span> Bookmarks
+  </button>
+
+  <button class="nav-button" data-page="settings">
+    <span class="nav-icon">⚙</span> Settings
+  </button>
+</nav>
+
 
   <div class="sidebar-bottom">
     <div class="profile">
@@ -910,7 +920,28 @@ body.authenticated .auth-screen {
 
         <div class="project-grid" id="project-grid"></div>
       </section>
+<!-- Calendar -->
+<section class="page" id="page-calendar">
+  <div class="page-intro">
+    <h2>Calendar</h2>
+    <p class="subtitle">View your tasks and notes by date.</p>
+  </div>
 
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px;">
+      <button class="secondary-button" id="calendar-prev" type="button">← Previous</button>
+      <h3 id="calendar-month" style="margin:0;">Month Year</h3>
+      <button class="secondary-button" id="calendar-next" type="button">Next →</button>
+    </div>
+
+    <div id="calendar-grid" style="display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:8px;"></div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3 id="calendar-selected-date">Select a date</h3>
+    <div id="calendar-day-items">Choose a day to see its tasks and notes.</div>
+  </div>
+</section>
       <!-- Bookmarks -->
       <section class="page" id="page-bookmarks">
         <div class="page-intro">
@@ -1372,6 +1403,7 @@ function makeId() {
         if (page === "tasks") renderTasks();
         if (page === "projects") renderProjects();
         if (page === "bookmarks") renderBookmarks();
+        if (page === "calendar") renderCalendar();
       }
 
       function addTask(title, input) {
@@ -1483,7 +1515,7 @@ function makeId() {
         `).join("");
 
         renderDashboard();
-      }
+      } 
 
       function renderBookmarks() {
         const grid = document.getElementById("bookmark-grid");
@@ -1491,7 +1523,124 @@ function makeId() {
         if (!data.bookmarks.length) {
           grid.innerHTML = '<div class="card empty-state" style="grid-column:1/-1">No bookmarks yet. Add a useful website above.</div>';
           return;
-        }
+        } let calendarDate = new Date();
+let selectedCalendarDate = new Date();
+
+function formatCalendarDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function renderCalendar() {
+  const grid = document.getElementById("calendar-grid");
+  const monthTitle = document.getElementById("calendar-month");
+
+  if (!grid || !monthTitle) return;
+
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+
+  monthTitle.textContent = calendarDate.toLocaleDateString("en", {
+    month: "long",
+    year: "numeric"
+  });
+
+  grid.innerHTML = "";
+
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach(day => {
+    const heading = document.createElement("div");
+    heading.textContent = day;
+    heading.style.fontWeight = "bold";
+    heading.style.textAlign = "center";
+    grid.appendChild(heading);
+  });
+
+  const firstDay = new Date(year, month, 1);
+  const offset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < offset; i++) {
+    grid.appendChild(document.createElement("div"));
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateKey = formatCalendarDate(date);
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "secondary-button";
+    button.textContent = day;
+    button.style.minHeight = "48px";
+
+    if (dateKey === formatCalendarDate(selectedCalendarDate)) {
+      button.style.border = "2px solid var(--accent)";
+    }
+
+    button.addEventListener("click", () => {
+      selectedCalendarDate = date;
+      renderCalendar();
+      renderCalendarDay();
+    });
+
+    grid.appendChild(button);
+  }
+
+  renderCalendarDay();
+}
+
+function renderCalendarDay() {
+  const title = document.getElementById("calendar-selected-date");
+  const container = document.getElementById("calendar-day-items");
+
+  if (!title || !container) return;
+
+  title.textContent = selectedCalendarDate.toLocaleDateString("en", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+
+  container.innerHTML = "";
+
+  const dateKey = formatCalendarDate(selectedCalendarDate);
+  const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+
+  const matchingTasks = tasks.filter(task => task.dueDate === dateKey);
+
+  if (matchingTasks.length === 0) {
+    container.textContent = "No tasks for this day yet.";
+    return;
+  }
+
+  matchingTasks.forEach(task => {
+    const item = document.createElement("div");
+    item.textContent = "✓ " + (task.title || task.text || "Untitled task");
+    item.style.padding = "8px 0";
+    container.appendChild(item);
+  });
+}
+
+document.getElementById("calendar-prev")?.addEventListener("click", () => {
+  calendarDate = new Date(
+    calendarDate.getFullYear(),
+    calendarDate.getMonth() - 1,
+    1
+  );
+  renderCalendar();
+});
+
+document.getElementById("calendar-next")?.addEventListener("click", () => {
+  calendarDate = new Date(
+    calendarDate.getFullYear(),
+    calendarDate.getMonth() + 1,
+    1
+  );
+  renderCalendar();
+});
 
         grid.innerHTML = data.bookmarks.map(bookmark => `
           <article class="bookmark-card">
