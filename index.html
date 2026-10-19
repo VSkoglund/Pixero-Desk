@@ -650,6 +650,20 @@ body.authenticated .auth-screen {
     </p>
 
     <form class="auth-form" id="auth-form">
+<div class="field" id="auth-username-field" hidden>
+  <label for="auth-username">Username</label>
+  <input
+    class="text-input"
+    id="auth-username"
+    type="text"
+    autocomplete="username"
+    placeholder="Choose a username"
+    minlength="3"
+    maxlength="15"
+    required
+  >
+</div>
+
 
       <div class="field">
         <label for="auth-email">Email address</label>
@@ -949,6 +963,32 @@ body.authenticated .auth-screen {
             </div>
             <input class="text-input" id="workspace-name-input" style="max-width:220px" maxlength="50" placeholder="Local Workspace">
           </div>
+        
+<div class="settings-row">
+  <div>
+    <div class="settings-title">Username</div>
+    <div class="settings-description">Change your account username (3–15 characters).</div>
+  </div>
+
+  <form id="username-form" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <input
+      class="text-input"
+      id="settings-username"
+      type="text"
+      maxlength="15"
+      minlength="3"
+      placeholder="Your username"
+      required
+      style="max-width:220px"
+    >
+    <button class="secondary-button" id="username-save-button" type="submit">
+      Save
+    </button>
+  </form>
+</div>
+
+<p id="username-status" role="status" aria-live="polite"></p>
+
 
           <div class="settings-row">
             <div>
@@ -968,7 +1008,7 @@ body.authenticated .auth-screen {
         </div>
 
         <div class="notice" style="margin-top:17px">
-          <strong>About this version:</strong> PixeroDesk currently saves information in this browser only. It does not yet have user accounts or cloud synchronization. Do not use this demo to store sensitive information.
+          <strong>About this version:</strong> PixeroDesk currently saves information in the cloud. We have developed accounts which is in BETA. Do not use this demo to store sensitive information.
         </div>
       </section>
     </main>
@@ -1091,33 +1131,40 @@ body.authenticated .auth-screen {
     }
   }
 
-  function setAuthMode(mode) {
-    authMode = mode;
+function setAuthMode(mode) {
+  authMode = mode;
 
-    const registering = mode === "register";
+  const registering = mode === "register";
 
-    document.getElementById("auth-title").textContent =
-      registering ? "Create your account" : "Welcome back";
+  document.getElementById("auth-title").textContent =
+    registering ? "Create your account" : "Welcome back";
 
-    document.getElementById("auth-description").textContent =
-      registering
-        ? "Create an account to save your workspace in the cloud."
-        : "Sign in to access your personal workspace.";
+  document.getElementById("auth-description").textContent =
+    registering
+      ? "Create an account to save your workspace in the cloud."
+      : "Sign in to access your personal workspace.";
 
-    document.getElementById("auth-submit").textContent =
-      registering ? "Create Account" : "Sign In";
+  document.getElementById("auth-submit").textContent =
+    registering ? "Create Account" : "Sign In";
 
-    document.getElementById("auth-switch-text").textContent =
-      registering ? "Already have an account?" : "Don't have an account?";
+  document.getElementById("auth-switch-text").textContent =
+    registering ? "Already have an account?" : "Don't have an account?";
 
-    document.getElementById("auth-switch-button").textContent =
-      registering ? "Sign in" : "Create account";
+  document.getElementById("auth-switch-button").textContent =
+    registering ? "Sign in" : "Create account";
 
-    document.getElementById("auth-password").autocomplete =
-      registering ? "new-password" : "current-password";
+  document.getElementById("auth-password").autocomplete =
+    registering ? "new-password" : "current-password";
 
-    showAuthMessage("");
-  }
+  const usernameField = document.getElementById("auth-username-field");
+  const usernameInput = document.getElementById("auth-username");
+
+  usernameField.hidden = !registering;
+  usernameInput.required = registering;
+
+  showAuthMessage("");
+}
+
 
   document.getElementById("auth-switch-button").addEventListener("click", () => {
     setAuthMode(authMode === "login" ? "register" : "login");
@@ -1128,6 +1175,7 @@ body.authenticated .auth-screen {
 
     const email = document.getElementById("auth-email").value.trim();
     const password = document.getElementById("auth-password").value;
+    const username = document.getElementById("auth-username").value.trim();
     const button = document.getElementById("auth-submit");
 
     button.disabled = true;
@@ -1137,17 +1185,42 @@ body.authenticated .auth-screen {
 
     try {
       if (authMode === "register") {
+        const normalizedUsername = username.trim();
+        if (!normalizedUsername) {
+  showAuthMessage("Please enter a username.", "error");
+  button.disabled = false;
+  return;
+}
+
+if (normalizedUsername.length < 3 || normalizedUsername.length > 15) {
+  showAuthMessage("Username must be between 3 and 15 characters.");
+  button.disabled = false;
+  return;
+}
 const { data: result, error } = await supabaseClient.auth.signUp({
   email,
   password,
   options: {
-    emailRedirectTo: "https://vskoglund.github.io/Pixero-Desk/"
+    emailRedirectTo: "https://vskoglund.github.io/Pixero-Desk/",
+    data: {
+  username: normalizedUsername
+}
   }
 });
 
 
 
-        if (error) throw error;
+
+       if (error) {
+  if (
+    error.code === "23505" ||
+    error.message?.toLowerCase().includes("profiles_username_unique")
+  ) {
+    throw new Error("That username is already taken. Please choose another.");
+  }
+
+  throw error;
+}
 
         if (!result.session) {
           showAuthMessage(
@@ -1230,8 +1303,19 @@ const { data: result, error } = await supabaseClient.auth.signUp({
       document.getElementById("dashboard-note").value = data.quickNote;
       document.getElementById("full-note").value = data.fullNote;
       document.getElementById("workspace-name-input").value = data.workspaceName;
-      document.getElementById("profile-name").textContent =
-        currentUser.email || data.workspaceName;
+const { data: profile, error: profileError } = await supabaseClient
+  .from("profiles")
+  .select("username")
+  .eq("id", currentUser.id)
+  .maybeSingle();
+
+if (profileError) throw profileError;
+
+document.getElementById("profile-name").textContent =
+  profile?.username || currentUser.email || data.workspaceName;
+      document.getElementById("settings-username").value =
+  profile?.username || "";
+
 
       cloudReady = true;
       document.body.classList.add("authenticated");
@@ -1614,6 +1698,52 @@ function makeId() {
       });
 
       document.getElementById("export-button").addEventListener("click", exportData);
+document.getElementById("username-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!currentUser) return;
+
+  const input = document.getElementById("settings-username");
+  const button = document.getElementById("username-save-button");
+  const status = document.getElementById("username-status");
+  const username = input.value.trim();
+
+  if (username.length < 3 || username.length > 15) {
+    status.textContent = "Username must be between 3 and 15 characters.";
+    return;
+  }
+
+  button.disabled = true;
+  status.textContent = "Saving username...";
+
+  try {
+    const { error } = await supabaseClient
+      .from("profiles")
+     .upsert(
+  {
+    id: currentUser.id,
+    username,
+    updated_at: new Date().toISOString()
+  },
+  { onConflict: "id" }
+);
+
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error("That username is already taken.");
+      }
+      throw error;
+    }
+
+    document.getElementById("profile-name").textContent = username;
+    status.textContent = "Username updated successfully!";
+  } catch (error) {
+    status.textContent = error.message || "Could not update username.";
+  } finally {
+    button.disabled = false;
+  }
+});
+
 
       document.getElementById("clear-button").addEventListener("click", () => {
         const confirmed = window.confirm("Delete all PixeroDesk data saved in this browser? This cannot be undone.");
