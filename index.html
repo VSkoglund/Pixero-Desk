@@ -817,7 +817,7 @@ body.authenticated .auth-screen {
                 <span class="small-muted">Auto-save</span>
               </div>
               <textarea class="text-area" id="dashboard-note" placeholder="Write down an idea, reminder, or thought..." aria-label="Quick notes"></textarea>
-              <div class="save-status" id="note-status">Saved in this browser</div>
+              <div class="save-status" id="note-status">Saved in the cloud</div>
             </div>
 
             <div class="card">
@@ -864,7 +864,7 @@ body.authenticated .auth-screen {
             <span class="small-muted">Auto-save</span>
           </div>
           <textarea class="text-area" id="full-note" style="min-height:300px" placeholder="Start writing..." aria-label="Notebook"></textarea>
-          <div class="save-status" id="full-note-status">Saved in this browser</div>
+          <div class="save-status" id="full-note-status">Saved in the cloud!</div>
         </div>
       </section>
 
@@ -1444,7 +1444,7 @@ function makeId() {
         data[property] = field.value;
         const saved = saveData();
         document.getElementById(statusId).textContent =
-          saved ? "Saved in this browser" : "Could not save in this browser";
+          saved ? "Saved in the cloud!r" : "Could not save in the cloud";
       }
 
       function exportData() {
