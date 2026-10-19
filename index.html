@@ -1524,7 +1524,20 @@ function makeId() {
         if (!data.bookmarks.length) {
           grid.innerHTML = '<div class="card empty-state" style="grid-column:1/-1">No bookmarks yet. Add a useful website above.</div>';
           return;
-        } let calendarDate = new Date();
+        }
+
+        grid.innerHTML = data.bookmarks.map(bookmark => `
+          <article class="bookmark-card">
+            <div class="bookmark-card-top">
+              <div class="project-icon">↗</div>
+              <button class="mini-button" type="button" data-bookmark-delete="${escapeHTML(bookmark.id)}" aria-label="Delete bookmark" title="Delete bookmark">×</button>
+            </div>
+            <div class="bookmark-title">${escapeHTML(bookmark.name)}</div>
+            <div class="bookmark-url"><a class="bookmark-link" href="${escapeHTML(bookmark.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(bookmark.url)}</a></div>
+          </article>
+        `).join("");
+      }
+let calendarDate = new Date();
 let selectedCalendarDate = new Date();
 
 function formatCalendarDate(date) {
@@ -1642,18 +1655,6 @@ document.getElementById("calendar-next")?.addEventListener("click", () => {
   );
   renderCalendar();
 });
-
-        grid.innerHTML = data.bookmarks.map(bookmark => `
-          <article class="bookmark-card">
-            <div class="bookmark-card-top">
-              <div class="project-icon">↗</div>
-              <button class="mini-button" type="button" data-bookmark-delete="${escapeHTML(bookmark.id)}" aria-label="Delete bookmark" title="Delete bookmark">×</button>
-            </div>
-            <div class="bookmark-title">${escapeHTML(bookmark.name)}</div>
-            <div class="bookmark-url"><a class="bookmark-link" href="${escapeHTML(bookmark.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(bookmark.url)}</a></div>
-          </article>
-        `).join("");
-      }
 
       function renderAll() {
         renderDashboard();
